@@ -1,16 +1,17 @@
 using Microsoft.Playwright;
+using OrangeHRM.Tests.Configuration;
 
 namespace OrangeHRM.Tests.Pages;
 
-public class LoginPage(IPage page)
+public class LoginPage(IPage page) : BasePage(page)
 {
-    private ILocator UsernameInput => page.GetByPlaceholder("Username", new() { Exact = true });
-    private ILocator PasswordInput => page.GetByPlaceholder("Password", new() { Exact = true });
-    private ILocator LoginButton => page.GetByRole(AriaRole.Button, new() { Name = "Login", Exact = true });
+    private ILocator UsernameInput => Page.GetByPlaceholder("Username", new() { Exact = true });
+    private ILocator PasswordInput => Page.GetByPlaceholder("Password", new() { Exact = true });
+    private ILocator LoginButton => Page.GetByRole(AriaRole.Button, new() { Name = "Login", Exact = true });
 
-    public async Task NavigateAsync(string baseUrl)
+    public async Task OpenAsync()
     {
-        await page.GotoAsync(baseUrl);
+        await NavigateToAsync(TestSettings.BaseUrl);
     }
 
     public async Task LoginAsync(string username, string password)

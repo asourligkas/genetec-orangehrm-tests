@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!-- Run sequentially against the shared public demo. -->
+  <NUnit>
+    <NumberOfTestWorkers>0</NumberOfTestWorkers>
+  </NUnit>
+  <Playwright>
+    <BrowserName>chromium</BrowserName>
+    <ExpectTimeout>15000</ExpectTimeout>
+    <LaunchOptions>
+      <!-- Show the browser locally; override to true on the command line for headless runs. -->
+      <Headless>false</Headless>
+    </LaunchOptions>
+  </Playwright>
+</RunSettings>

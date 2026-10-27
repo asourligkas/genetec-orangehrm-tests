@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <RunSettingsFilePath Condition="'$(RunSettingsFilePath)' == ''">$(MSBuildProjectDirectory)/RunSettings/test.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>
