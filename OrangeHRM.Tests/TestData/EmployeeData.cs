@@ -12,6 +12,6 @@ public record EmployeeData(
     public static EmployeeData CreateUnique()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        return new EmployeeData($"QA{suffix}", "Demo", $"DM{suffix}");
+        return new EmployeeData($"QA{suffix}", $"Demo{suffix}", $"DM{suffix}");
     }
 }

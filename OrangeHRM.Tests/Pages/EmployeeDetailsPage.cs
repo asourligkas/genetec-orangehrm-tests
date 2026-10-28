@@ -47,6 +47,12 @@ public class EmployeeDetailsPage(IPage page) : BasePage(page)
         await Expect(EmployeeIdInput).ToHaveValueAsync(employeeId);
     }
 
+    public async Task VerifyEmployeeNameAsync(string firstName, string lastName)
+    {
+        await Expect(FirstNameInput).ToHaveValueAsync(firstName);
+        await Expect(LastNameInput).ToHaveValueAsync(lastName);
+    }
+
     public async Task UpdateLastNameAndOtherIdAsync(string lastName, string otherId)
     {
         await LastNameInput.FillAsync(lastName);

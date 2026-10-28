@@ -1,14 +1,11 @@
 using OrangeHRM.Tests.Fixtures;
 using OrangeHRM.Tests.Pages;
 using OrangeHRM.Tests.TestData;
-using NUnit.Framework.Interfaces;
 
 namespace OrangeHRM.Tests.Tests.Pim;
 
-public class EmployeeWorkflowTests : AuthenticatedTestBase
+public class EmployeeWorkflowTests : PimTestBase
 {
-    private EmployeeData? _employee;
-
     [Test]
     public async Task AdminCanCreateFindEditAndVerifyEmployeeDetails()
     {
@@ -57,35 +54,5 @@ public class EmployeeWorkflowTests : AuthenticatedTestBase
         await employeeDetails.VerifyLastNameAndOtherIdAsync(_employee.LastName, _employee.OtherId);
         await employeeDetails.VerifyNationalityAsync(_employee.Nationality);
         await employeeDetails.VerifyDateOfBirthAsync(dateOfBirth);
-    }
-
-    [TearDown]
-    public async Task DeleteCreatedEmployee()
-    {
-        if (_employee is null)
-            return;
-
-        try
-        {
-            var employeeList = new EmployeeListPage(Page);
-            await Dashboard.OpenPimModuleAsync();
-            await employeeList.OpenEmployeeListAsync();
-            await employeeList.DeleteEmployeeIfPresentAsync(_employee);
-            await employeeList.SearchByEmployeeIdAsync(_employee.EmployeeId);
-            await employeeList.VerifyEmployeeIsNotListedAsync(_employee.EmployeeId);
-            TestContext.Progress.WriteLine($"Cleanup verified for employee {_employee.EmployeeId}.");
-        }
-        catch (Exception exception)
-        {
-            var message = $"Cleanup failed for employee {_employee.EmployeeId}: {exception.Message}";
-            if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
-                TestContext.Error.WriteLine(message);
-            else
-                throw new InvalidOperationException(message, exception);
-        }
-        finally
-        {
-            _employee = null;
-        }
     }
 }
