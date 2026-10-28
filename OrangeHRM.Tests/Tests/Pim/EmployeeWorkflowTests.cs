@@ -33,12 +33,18 @@ public class EmployeeWorkflowTests : AuthenticatedTestBase
         await employeeList.OpenEmployeeDetailsAsync(_employee.EmployeeId);
         await employeeDetails.VerifyPageIsDisplayedAsync();
         await employeeDetails.VerifyEmployeeIdAsync(_employee.EmployeeId);
+        var dateOfBirth = new DateOnly(1990, 5, 17);
         var updatedEmployee = _employee with
         {
             LastName = "DemoUpdated",
-            OtherId = $"ALT{_employee.EmployeeId}"
+            OtherId = $"ALT{_employee.EmployeeId}",
+            Nationality = "Canadian",
+            DateOfBirth = dateOfBirth
         };
         await employeeDetails.UpdateLastNameAndOtherIdAsync(updatedEmployee.LastName, updatedEmployee.OtherId);
+        await employeeDetails.SelectNationalityAsync(updatedEmployee.Nationality);
+        await employeeDetails.SelectDateOfBirthAsync(dateOfBirth);
+        await employeeDetails.SavePersonalDetailsAsync();
         await employeeDetails.VerifySaveConfirmationAsync();
         _employee = updatedEmployee;
     }

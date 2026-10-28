@@ -5,7 +5,9 @@ public record EmployeeData(
     string LastName,
     string EmployeeId,
     string MiddleName = "",
-    string OtherId = "")
+    string OtherId = "",
+    string Nationality = "",
+    DateOnly? DateOfBirth = null)
 {
     public static EmployeeData CreateUnique()
     {
