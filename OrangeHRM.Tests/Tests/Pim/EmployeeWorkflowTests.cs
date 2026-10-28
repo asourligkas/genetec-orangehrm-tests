@@ -10,7 +10,7 @@ public class EmployeeWorkflowTests : AuthenticatedTestBase
     private EmployeeData? _employee;
 
     [Test]
-    public async Task AdminCanCreateFindAndEditEmployee()
+    public async Task AdminCanCreateFindEditAndVerifyEmployeeDetails()
     {
         var employeeList = new EmployeeListPage(Page);
         var addEmployee = new AddEmployeePage(Page);
@@ -47,6 +47,16 @@ public class EmployeeWorkflowTests : AuthenticatedTestBase
         await employeeDetails.SavePersonalDetailsAsync();
         await employeeDetails.VerifySaveConfirmationAsync();
         _employee = updatedEmployee;
+
+        await employeeList.OpenEmployeeListAsync();
+        await employeeList.SearchByEmployeeIdAsync(_employee.EmployeeId);
+        await employeeList.VerifyEmployeeIsListedAsync(_employee);
+        await employeeList.OpenEmployeeDetailsAsync(_employee.EmployeeId);
+        await employeeDetails.VerifyPageIsDisplayedAsync();
+        await employeeDetails.VerifyEmployeeIdAsync(_employee.EmployeeId);
+        await employeeDetails.VerifyLastNameAndOtherIdAsync(_employee.LastName, _employee.OtherId);
+        await employeeDetails.VerifyNationalityAsync(_employee.Nationality);
+        await employeeDetails.VerifyDateOfBirthAsync(dateOfBirth);
     }
 
     [TearDown]

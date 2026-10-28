@@ -79,4 +79,24 @@ public class EmployeeDetailsPage(IPage page) : BasePage(page)
     {
         await Expect(SaveConfirmation).ToBeVisibleAsync();
     }
+
+    public async Task VerifyLastNameAndOtherIdAsync(string lastName, string otherId)
+    {
+        await Expect(LastNameInput).ToHaveValueAsync(lastName);
+        await Expect(OtherIdInput).ToHaveValueAsync(otherId);
+    }
+
+    public async Task VerifyNationalityAsync(string nationality)
+    {
+        await Expect(NationalityDropdown).ToHaveTextAsync(nationality);
+    }
+
+    public async Task VerifyDateOfBirthAsync(DateOnly dateOfBirth)
+    {
+        var displayFormat = await DateOfBirthInput.GetAttributeAsync("placeholder")
+            ?? throw new InvalidOperationException("The date of birth input has no display format.");
+        // OrangeHRM uses lowercase 'mm' for months; .NET date formats use uppercase 'MM'.
+        var expectedValue = dateOfBirth.ToString(displayFormat.Replace("mm", "MM"), CultureInfo.InvariantCulture);
+        await Expect(DateOfBirthInput).ToHaveValueAsync(expectedValue);
+    }
 }
