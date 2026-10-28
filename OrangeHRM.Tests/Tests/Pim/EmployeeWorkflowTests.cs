@@ -10,10 +10,11 @@ public class EmployeeWorkflowTests : AuthenticatedTestBase
     private EmployeeData? _employee;
 
     [Test]
-    public async Task AdminCanCreateAndFindEmployee()
+    public async Task AdminCanCreateFindAndEditEmployee()
     {
         var employeeList = new EmployeeListPage(Page);
         var addEmployee = new AddEmployeePage(Page);
+        var employeeDetails = new EmployeeDetailsPage(Page);
 
         await Dashboard.OpenPimModuleAsync();
         await employeeList.VerifyPageIsDisplayedAsync();
@@ -29,6 +30,17 @@ public class EmployeeWorkflowTests : AuthenticatedTestBase
         await employeeList.OpenEmployeeListAsync();
         await employeeList.SearchByEmployeeIdAsync(_employee.EmployeeId);
         await employeeList.VerifyEmployeeIsListedAsync(_employee);
+        await employeeList.OpenEmployeeDetailsAsync(_employee.EmployeeId);
+        await employeeDetails.VerifyPageIsDisplayedAsync();
+        await employeeDetails.VerifyEmployeeIdAsync(_employee.EmployeeId);
+        var updatedEmployee = _employee with
+        {
+            LastName = "DemoUpdated",
+            OtherId = $"ALT{_employee.EmployeeId}"
+        };
+        await employeeDetails.UpdateLastNameAndOtherIdAsync(updatedEmployee.LastName, updatedEmployee.OtherId);
+        await employeeDetails.VerifySaveConfirmationAsync();
+        _employee = updatedEmployee;
     }
 
     [TearDown]

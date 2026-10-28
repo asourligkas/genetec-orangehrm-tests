@@ -66,6 +66,11 @@ public class EmployeeListPage(IPage page) : BasePage(page)
         await Expect(row.GetByRole(AriaRole.Cell, new() { Name = employee.LastName, Exact = true })).ToBeVisibleAsync();
     }
 
+    public async Task OpenEmployeeDetailsAsync(string employeeId)
+    {
+        await EmployeeRow(employeeId).GetByRole(AriaRole.Cell, new() { Name = employeeId, Exact = true }).ClickAsync();
+    }
+
     public async Task VerifyEmployeeIsNotListedAsync(string employeeId)
     {
         await Expect(NoRecordsMessage).ToBeVisibleAsync();
@@ -79,8 +84,8 @@ public class EmployeeListPage(IPage page) : BasePage(page)
         if (await NoRecordsMessage.IsVisibleAsync())
             return;
 
-        // Check the test-owned ID and names before using this row's unlabelled delete button.
-        await VerifyEmployeeIsListedAsync(employee);
+        var row = EmployeeRow(employee.EmployeeId);
+        await Expect(row).ToHaveCountAsync(1);
         await DeleteButtonForEmployee(employee.EmployeeId).ClickAsync();
         await ConfirmDeleteButton.ClickAsync();
         await Expect(ConfirmDeleteButton).ToBeHiddenAsync();

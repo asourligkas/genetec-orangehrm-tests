@@ -1,6 +1,11 @@
 namespace OrangeHRM.Tests.TestData;
 
-public record EmployeeData(string FirstName, string LastName, string EmployeeId, string MiddleName = "")
+public record EmployeeData(
+    string FirstName,
+    string LastName,
+    string EmployeeId,
+    string MiddleName = "",
+    string OtherId = "")
 {
     public static EmployeeData CreateUnique()
     {
