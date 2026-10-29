@@ -7,6 +7,7 @@ namespace OrangeHRM.Tests.Tests.Pim;
 public class EmployeeWorkflowTests : PimTestBase
 {
     [Test]
+    [Description("Create and find an employee by ID, edit personal details, then reopen to verify persistence.")]
     public async Task AdminCanCreateFindEditAndVerifyEmployeeDetails()
     {
         var employeeList = new EmployeeListPage(Page);
@@ -23,6 +24,9 @@ public class EmployeeWorkflowTests : PimTestBase
         var employee = EmployeeData.CreateUnique();
         EmployeesToCleanup.Add(employee);
         await addEmployee.CreateEmployeeAsync(employee);
+        await employeeDetails.VerifyPageIsDisplayedAsync();
+        await employeeDetails.VerifyEmployeeIdAsync(employee.EmployeeId);
+        await employeeDetails.VerifyEmployeeNameAsync(employee.FirstName, employee.LastName);
 
         await employeeList.OpenEmployeeListAsync();
         await employeeList.SearchByEmployeeIdAsync(employee.EmployeeId);

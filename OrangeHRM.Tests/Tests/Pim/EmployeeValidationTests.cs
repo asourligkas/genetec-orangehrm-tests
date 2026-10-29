@@ -7,6 +7,7 @@ namespace OrangeHRM.Tests.Tests.Pim;
 public class EmployeeValidationTests : PimTestBase
 {
     [Test]
+    [Description("Verify required errors for both names, correct each in turn, and confirm employee creation.")]
     public async Task RequiredNamesMustBeProvidedBeforeEmployeeCanBeCreated()
     {
         var employeeList = new EmployeeListPage(Page);
@@ -37,6 +38,7 @@ public class EmployeeValidationTests : PimTestBase
     }
 
     [Test]
+    [Description("Verify that a duplicate employee ID prevents creation, then use a unique ID to create the new employee without changing the original record.")]
     public async Task CannotCreateEmployeeWithDuplicateId()
     {
         var employeeList = new EmployeeListPage(Page);

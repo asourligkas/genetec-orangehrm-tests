@@ -63,6 +63,7 @@ public class EmployeeListPage(IPage page) : BasePage(page)
     public async Task SearchByEmployeeIdAsync(string employeeId)
     {
         await EmployeeIdInput.FillAsync(employeeId);
+        // Previous results can still be visible after clicking Search; wait for this ID's response first.
         var response = await Page.RunAndWaitForResponseAsync(
             () => SearchButton.ClickAsync(), response => IsGetEmployeesResponse(response)
                 && response.Url.Contains(Uri.EscapeDataString(employeeId), StringComparison.Ordinal));

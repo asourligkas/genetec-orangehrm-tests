@@ -85,7 +85,6 @@ public class AddEmployeePage(IPage page) : BasePage(page)
     {
         await FillEmployeeDetailsAsync(employee);
         await SubmitAsync();
-        await Heading.WaitForAsync(new() { State = WaitForSelectorState.Hidden });
     }
 
     public async Task FillFirstNameAsync(string firstName)

@@ -7,6 +7,7 @@ namespace OrangeHRM.Tests.Tests.Pim;
 public class EmployeeDeletionTests : PimTestBase
 {
     [Test]
+    [Description("Verify cancellation preserves the employee, then confirm deletion and check absence in a fresh search.")]
     public async Task EmployeeIsDeletedOnlyAfterConfirmation()
     {
         var employeeList = new EmployeeListPage(Page);
@@ -18,6 +19,7 @@ public class EmployeeDeletionTests : PimTestBase
         await Dashboard.OpenPimModuleAsync();
         await employeeList.OpenAddEmployeeFormAsync();
         await addEmployee.CreateEmployeeAsync(employee);
+        await employeeDetails.VerifyPageIsDisplayedAsync();
         await employeeDetails.VerifyEmployeeIdAsync(employee.EmployeeId);
 
         await employeeList.OpenEmployeeListAsync();

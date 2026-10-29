@@ -7,6 +7,7 @@ namespace OrangeHRM.Tests.Tests;
 public class LoginTests : BaseTest
 {
     [Test]
+    [Description("Verify that valid administrator credentials open the dashboard.")]
     public async Task AdminCanLoginSuccessfully()
     {
         await Login.OpenAsync();

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <RunConfiguration>
+    <!-- Relative to this RunSettings folder; resolves to OrangeHRM.Tests/TestResults. -->
     <ResultsDirectory>../TestResults</ResultsDirectory>
   </RunConfiguration>
   <LoggerRunSettings>
