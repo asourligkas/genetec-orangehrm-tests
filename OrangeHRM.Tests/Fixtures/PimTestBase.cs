@@ -35,12 +35,11 @@ public abstract class PimTestBase : BaseTest
                 await employeeList.DeleteEmployeeIfPresentAsync(employee);
                 await employeeList.SearchByEmployeeIdAsync(employee.EmployeeId);
                 await employeeList.VerifyEmployeeIsNotListedAsync(employee);
-                TestContext.Progress.WriteLine($"Cleanup verified for employee {employee.EmployeeId} / {employee.FirstName}.");
             }
             catch (Exception exception)
             {
                 var message = $"Cleanup failed for employee {employee.EmployeeId} / {employee.FirstName}: {exception.Message}";
-                TestContext.Error.WriteLine(message);
+                TestContext.Error.WriteLine($"[{GetType().Name}.{TestContext.CurrentContext.Test.Name}] {message}");
                 cleanupFailures.Add(new InvalidOperationException(message, exception));
             }
         }

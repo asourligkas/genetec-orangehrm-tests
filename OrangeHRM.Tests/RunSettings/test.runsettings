@@ -6,11 +6,14 @@
   <LoggerRunSettings>
     <Loggers>
       <Logger friendlyName="trx" enabled="true" />
+      <Logger friendlyName="html" enabled="true" />
     </Loggers>
   </LoggerRunSettings>
   <!-- Run sequentially against the shared public demo. -->
   <NUnit>
     <NumberOfTestWorkers>0</NumberOfTestWorkers>
+    <!-- NUnit resolves this relative to bin/<configuration>/<target framework>. -->
+    <WorkDirectory>../../../TestResults</WorkDirectory>
   </NUnit>
   <Playwright>
     <BrowserName>chromium</BrowserName>

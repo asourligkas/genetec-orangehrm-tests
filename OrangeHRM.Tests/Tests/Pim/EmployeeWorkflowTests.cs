@@ -22,7 +22,6 @@ public class EmployeeWorkflowTests : PimTestBase
         // Register before Save so teardown can find a record even if the subsequent wait fails.
         var employee = EmployeeData.CreateUnique();
         EmployeesToCleanup.Add(employee);
-        TestContext.Progress.WriteLine($"Test employee: {employee.EmployeeId} / {employee.FirstName} {employee.LastName}");
         await addEmployee.CreateEmployeeAsync(employee);
 
         await employeeList.OpenEmployeeListAsync();

@@ -14,7 +14,6 @@ public class EmployeeDeletionTests : PimTestBase
         var employeeDetails = new EmployeeDetailsPage(Page);
         var employee = EmployeeData.CreateUnique();
         EmployeesToCleanup.Add(employee);
-        TestContext.Progress.WriteLine($"Deletion test employee: {employee.EmployeeId}.");
 
         await Dashboard.OpenPimModuleAsync();
         await employeeList.OpenAddEmployeeFormAsync();

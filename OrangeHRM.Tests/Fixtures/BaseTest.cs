@@ -7,7 +7,11 @@ namespace OrangeHRM.Tests.Fixtures;
 [Parallelizable(ParallelScope.Self)]
 public abstract class BaseTest : PageTest
 {
+    private static readonly string RunId = $"{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss-fff}Z-{Environment.ProcessId}";
     private string _artifactDirectory = null!;
+    private string _testName = null!;
+    private string _artifactFileName = null!;
+    private string? _failureUrl;
     private bool _failureScreenshotCaptured;
     private bool _traceStarted;
 
@@ -19,8 +23,14 @@ public abstract class BaseTest : PageTest
     {
         _failureScreenshotCaptured = false;
         _traceStarted = false;
-        _artifactDirectory = Path.Combine(TestContext.CurrentContext.WorkDirectory,
-            "TestResults", $"{GetType().Name}-{Guid.NewGuid():N}");
+        _failureUrl = null;
+        var test = TestContext.CurrentContext.Test;
+        _testName = $"{GetType().Name}.{test.Name}";
+        _artifactFileName = test.MethodName ?? "test";
+        var safeTestName = string.Concat(_testName.Select(character =>
+            Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
+        _artifactDirectory = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts", RunId,
+            $"{safeTestName}-{Guid.NewGuid().ToString("N")[..8]}"));
 
         Login = new LoginPage(Page);
         Dashboard = new DashboardPage(Page);
@@ -42,15 +52,16 @@ public abstract class BaseTest : PageTest
 
         try
         {
+            _failureUrl ??= Page.Url;
             Directory.CreateDirectory(_artifactDirectory);
-            var path = Path.Combine(_artifactDirectory, "failure.png");
+            var path = Path.Combine(_artifactDirectory, $"{_artifactFileName}.png");
             await Page.ScreenshotAsync(new() { Path = path, FullPage = true, Timeout = 10000 });
-            TestContext.AddTestAttachment(path, "Page at failure");
             _failureScreenshotCaptured = true;
+            TestContext.Out.WriteLine($"[{_testName}] Failure screenshot: {path}");
         }
         catch (Exception exception)
         {
-            TestContext.Error.WriteLine($"Could not capture failure screenshot: {exception.Message}");
+            TestContext.Error.WriteLine($"[{_testName}] Screenshot capture failed: {exception.Message}");
         }
     }
 
@@ -59,26 +70,31 @@ public abstract class BaseTest : PageTest
     {
         await CaptureFailureScreenshotAsync();
 
-        if (!_traceStarted)
+        if (_traceStarted)
+        {
+            try
+            {
+                if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
+                {
+                    Directory.CreateDirectory(_artifactDirectory);
+                    var path = Path.Combine(_artifactDirectory, $"{_artifactFileName}.zip");
+                    await Context.Tracing.StopAsync(new() { Path = path });
+                    TestContext.Out.WriteLine($"[{_testName}] Failure trace (including cleanup): {path}");
+                }
+                else
+                {
+                    await Context.Tracing.StopAsync();
+                }
+            }
+            catch (Exception exception)
+            {
+                TestContext.Error.WriteLine($"[{_testName}] Trace capture failed: {exception.Message}");
+            }
+        }
+
+        if (TestContext.CurrentContext.Result.Outcome.Status != TestStatus.Failed)
             return;
 
-        try
-        {
-            if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
-            {
-                Directory.CreateDirectory(_artifactDirectory);
-                var path = Path.Combine(_artifactDirectory, "trace.zip");
-                await Context.Tracing.StopAsync(new() { Path = path });
-                TestContext.AddTestAttachment(path, "Playwright trace including cleanup");
-            }
-            else
-            {
-                await Context.Tracing.StopAsync();
-            }
-        }
-        catch (Exception exception)
-        {
-            TestContext.Error.WriteLine($"Could not finish Playwright trace: {exception.Message}");
-        }
+        TestContext.Out.WriteLine($"[{_testName}] Page URL at failure: {_failureUrl}");
     }
 }

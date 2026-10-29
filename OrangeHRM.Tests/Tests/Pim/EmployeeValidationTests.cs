@@ -20,7 +20,6 @@ public class EmployeeValidationTests : PimTestBase
         // Track the intended ID before any Save, including invalid submissions.
         var employee = EmployeeData.CreateUnique();
         EmployeesToCleanup.Add(employee);
-        TestContext.Progress.WriteLine($"Validation test employee: {employee.EmployeeId}.");
         await addEmployee.SetEmployeeIdAsync(employee.EmployeeId);
         await addEmployee.VerifyNamesAreEmptyAsync();
 
@@ -49,7 +48,6 @@ public class EmployeeValidationTests : PimTestBase
         // Track both intended IDs before Save so partial creation failures are cleaned up.
         EmployeesToCleanup.Add(firstEmployee);
         EmployeesToCleanup.Add(secondEmployee);
-        TestContext.Progress.WriteLine($"Duplicate ID test employees: {firstEmployee.EmployeeId}, {secondEmployee.EmployeeId}.");
 
         await Dashboard.OpenPimModuleAsync();
         await employeeList.OpenAddEmployeeFormAsync();
