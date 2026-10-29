@@ -16,7 +16,11 @@ public class EmployeeListPage(IPage page) : BasePage(page)
     private ILocator TableLoader => Page.Locator(".oxd-table-loader");
     // "No Records Found" appears in a results span and a toast paragraph; select only the results.
     private ILocator NoRecordsMessage => Page.Locator("span").Filter(new() { HasText = "No Records Found" });
-    private ILocator ConfirmDeleteButton => Page.GetByRole(AriaRole.Dialog)
+    private ILocator DeleteConfirmationDialog => Page.GetByRole(AriaRole.Dialog);
+    private ILocator CancelDeleteButton => DeleteConfirmationDialog
+        .GetByRole(AriaRole.Button, new() { Name = "No, Cancel", Exact = true });
+    // The trash icon contributes to the accessible name, so match the button text within the dialog.
+    private ILocator ConfirmDeleteButton => DeleteConfirmationDialog
         .GetByRole(AriaRole.Button, new() { Name = "Yes, Delete" });
 
     private ILocator EmployeeRow(string employeeId) => Page.GetByRole(AriaRole.Row)
@@ -88,6 +92,43 @@ public class EmployeeListPage(IPage page) : BasePage(page)
         await Expect(EmployeeRow(employee)).ToHaveCountAsync(0);
     }
 
+    public async Task VerifyEmployeeIdIsNotListedAsync(string employeeId)
+    {
+        await Expect(NoRecordsMessage).ToBeVisibleAsync();
+        await Expect(EmployeeRow(employeeId)).ToHaveCountAsync(0);
+    }
+
+    public async Task OpenDeleteConfirmationAsync(EmployeeData employee)
+    {
+        await Expect(EmployeeRow(employee)).ToHaveCountAsync(1);
+        await DeleteButtonForEmployee(employee).ClickAsync();
+    }
+
+    public async Task VerifyDeleteConfirmationIsDisplayedAsync()
+    {
+        await Expect(DeleteConfirmationDialog).ToBeVisibleAsync();
+        await Expect(CancelDeleteButton).ToBeEnabledAsync();
+        await Expect(ConfirmDeleteButton).ToBeEnabledAsync();
+    }
+
+    public async Task CancelEmployeeDeletionAsync()
+    {
+        await CancelDeleteButton.ClickAsync();
+        await Expect(DeleteConfirmationDialog).ToBeHiddenAsync();
+    }
+
+    public async Task ConfirmEmployeeDeletionAsync()
+    {
+        await ConfirmDeleteButton.ClickAsync();
+        await Expect(DeleteConfirmationDialog).ToBeHiddenAsync();
+    }
+
+    public async Task CancelEmployeeDeletionIfPresentAsync()
+    {
+        if (await DeleteConfirmationDialog.IsVisibleAsync())
+            await CancelEmployeeDeletionAsync();
+    }
+
     public async Task DeleteEmployeeIfPresentAsync(EmployeeData employee)
     {
         await OpenEmployeeListAsync();
@@ -96,10 +137,8 @@ public class EmployeeListPage(IPage page) : BasePage(page)
         if (await row.CountAsync() == 0)
             return;
 
-        await Expect(row).ToHaveCountAsync(1);
-        await DeleteButtonForEmployee(employee).ClickAsync();
-        await ConfirmDeleteButton.ClickAsync();
-        await Expect(ConfirmDeleteButton).ToBeHiddenAsync();
+        await OpenDeleteConfirmationAsync(employee);
+        await ConfirmEmployeeDeletionAsync();
     }
 
     private static bool IsGetEmployeesResponse(IResponse response) =>

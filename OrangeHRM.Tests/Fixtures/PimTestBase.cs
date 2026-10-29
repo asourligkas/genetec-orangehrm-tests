@@ -29,6 +29,7 @@ public abstract class PimTestBase : BaseTest
             try
             {
                 var employeeList = new EmployeeListPage(Page);
+                await employeeList.CancelEmployeeDeletionIfPresentAsync();
                 await Dashboard.OpenPimModuleAsync();
                 await employeeList.OpenEmployeeListAsync();
                 await employeeList.DeleteEmployeeIfPresentAsync(employee);
