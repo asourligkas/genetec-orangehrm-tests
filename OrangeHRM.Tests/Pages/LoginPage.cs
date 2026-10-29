@@ -11,7 +11,16 @@ public class LoginPage(IPage page) : BasePage(page)
 
     public async Task OpenAsync()
     {
-        await NavigateToAsync(TestSettings.BaseUrl);
+        var url = TestSettings.BaseUrl;
+        try
+        {
+            await NavigateToAsync(url);
+        }
+        catch (TimeoutException)
+        {
+            TestContext.Progress.WriteLine($"[{TestContext.CurrentContext.Test.Name}] Login page navigation timed out; retrying once.");
+            await NavigateToAsync(url);
+        }
     }
 
     public async Task LoginAsync(string username, string password)

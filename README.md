@@ -1,6 +1,6 @@
 # OrangeHRM PIM UI tests
 
-QA assessment implemented with C#/.NET 10, NUnit, and Microsoft.Playwright.NUnit. C#/.NET was approved as an alternative to the originally requested Node.js framework.
+QA assessment using C#/.NET 10, NUnit, and Microsoft.Playwright.NUnit. C#/.NET was approved as an alternative to the originally requested Node.js framework.
 
 Target: https://opensource-demo.orangehrmlive.com/
 
@@ -9,16 +9,16 @@ Target: https://opensource-demo.orangehrmlive.com/
 | Test | What it verifies |
 | --- | --- |
 | Administrator login | Valid credentials open the dashboard. |
-| Employee workflow | Create an employee, search by ID, open personal details, edit last name, Other ID, nationality and date of birth, then reopen and verify persistence. |
-| Required names | First and last name have separate required errors; correcting each field allows creation. |
-| Duplicate employee ID | An existing ID prevents creation; correcting it allows a second employee to be created while preserving the original record. |
+| Employee workflow | Create, search by ID, open details, edit last name, Other ID, nationality and date of birth, then reopen and verify persistence. |
+| Required names | Field-specific required errors clear as each name is supplied, allowing creation. |
+| Duplicate employee ID | An existing ID prevents creation; correcting it creates the second employee and preserves the original. |
 | Employee deletion | Cancel preserves the record; confirm removes it from a fresh search. |
 
-Each PIM test logs in independently and creates its own test data. The three additional regression scenarios cover input validation, identifier uniqueness, and destructive-action confirmation.
+The three additional PIM scenarios cover validation, identifier uniqueness, and deletion confirmation.
 
 ## Setup and execution
 
-Prerequisites: .NET 10 SDK and PowerShell 7 (`pwsh`). Run these commands from the repository root:
+Prerequisites: .NET 10 SDK and PowerShell 7 (`pwsh`). From the repository root:
 
 ```powershell
 dotnet restore OrangeHRM.Tests/OrangeHRM.Tests.csproj
@@ -27,29 +27,18 @@ pwsh OrangeHRM.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 dotnet test OrangeHRM.Tests/OrangeHRM.Tests.csproj
 ```
 
-The project automatically selects `OrangeHRM.Tests/RunSettings/test.runsettings`. Defaults are Chromium, a visible browser, sequential execution, and a 15-second assertion timeout.
-
-Headless execution:
+The project automatically selects `OrangeHRM.Tests/RunSettings/test.runsettings`: Chromium, visible browser, sequential execution, and a 15-second assertion timeout.
 
 ```powershell
+# Headless
 dotnet test OrangeHRM.Tests/OrangeHRM.Tests.csproj -- Playwright.LaunchOptions.Headless=true
-```
-
-Run one scenario:
-
-```powershell
+# One scenario
 dotnet test OrangeHRM.Tests/OrangeHRM.Tests.csproj --filter FullyQualifiedName~EmployeeWorkflowTests
-```
-
-Optional parallel execution:
-
-```powershell
+# Optional parallel run
 dotnet test OrangeHRM.Tests/OrangeHRM.Tests.csproj -- Playwright.LaunchOptions.Headless=true NUnit.NumberOfTestWorkers=2
 ```
 
-Parallelism is between fixture classes; tests within a fixture run sequentially. Each test receives its own Playwright browser context. Sequential execution is the default because the shared demo has intermittent startup delays.
-
-For debugging, use Test Explorer's Debug action with the same runsettings. The repository includes the VS Code C# Dev Kit runsettings selection; in Visual Studio, select the file under **Test > Configure Run Settings > Select Solution Wide runsettings File**. The browser is visible with the default settings.
+Parallelism is between fixture classes; tests within a fixture run sequentially. Each test gets its own browser context. Sequential execution is the default against the shared demo.
 
 ## Configuration
 
@@ -61,43 +50,37 @@ Environment variables override the public demo defaults:
 | `ORANGEHRM_USERNAME` | `Admin` |
 | `ORANGEHRM_PASSWORD` | `admin123` |
 
-For example, to start directly at the login page in the current PowerShell session:
-
-```powershell
-$env:ORANGEHRM_BASE_URL = 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login'
-```
-
-If using a custom `PLAYWRIGHT_BROWSERS_PATH`, set it to the same absolute directory for browser installation and test execution. Otherwise Playwright uses its default browser cache.
+To start directly at login, set `$env:ORANGEHRM_BASE_URL = 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login'` in PowerShell before running tests.
 
 ## Design decisions
 
-- **Page objects:** `Pages/` owns locators, interactions, and reusable assertions. Tests describe the scenario and expected data. Creation is verified on `EmployeeDetailsPage`, including the employee identity, rather than inferred from the creation form disappearing.
-- **Fixtures:** `BaseTest` supplies page objects and failure reporting. `PimTestBase` adds login and employee cleanup. No additional service or repository layers are needed for this UI suite.
-- **Synchronization:** Playwright actionability checks and retrying assertions handle UI readiness. Employee search also waits for the matching `GET /api/v2/pim/employees` response before checking the loader and results. Previous results may already be visible when another search starts; this wait distinguishes the new search from stale results. It couples this one page object to the endpoint, which must be updated if the application changes it. Assertions still check the UI.
-- **Test data and cleanup:** `EmployeeData.CreateUnique()` supplies names and IDs with a random suffix. Records are registered for cleanup before Save, including attempted duplicate-ID records. Teardown targets both employee ID and the unchanged first/middle names to avoid deleting another record if IDs collide. It verifies absence and attempts the remaining cleanup candidates even if one fails. Cleanup failures are reported without replacing an existing test failure. Tests create employee records with Create Login Details disabled.
+- **Page objects:** `Pages/` owns locators, interactions, and reusable assertions. Tests describe scenarios and expected data. Creation is verified on the details page using the employee identity.
+- **Fixtures:** `BaseTest` provides page objects and failure reporting. `PimTestBase` adds independent UI login and cleanup. This is sufficient for five tests.
+- **Synchronization:** Playwright actionability checks and retrying assertions handle readiness. Search also waits for the matching `GET /api/v2/pim/employees` response before checking the loader and UI results, because previous results may still be visible. This endpoint dependency is isolated to `EmployeeListPage`.
+- **Data and cleanup:** `EmployeeData.CreateUnique()` generates names and IDs. Records are registered before Save, including attempted duplicates. Teardown matches ID and unchanged first/middle names, verifies absence, and continues after individual cleanup failures. Cleanup errors are reported without replacing an existing test failure. Create Login Details stays disabled, so these are employee records.
 
 ## Reports and failure artifacts
 
-Each run using the supplied runsettings produces TRX and HTML reports in `OrangeHRM.Tests/TestResults/`. Open the HTML file in a browser for the run summary and failure details.
-
-Failed tests also save one screenshot and one Playwright trace under:
+TRX and HTML reports are generated in `OrangeHRM.Tests/TestResults/`. Open HTML in a browser for results and failure details. Failed tests save a screenshot and trace under:
 
 ```text
-OrangeHRM.Tests/TestResults/artifacts/<UTC run timestamp>-<process ID>/<class>.<test>-<suffix>/
+OrangeHRM.Tests/TestResults/artifacts/<UTC timestamp>-<process ID>/<class>.<test>-<suffix>/
 ```
 
-For PIM failures, the screenshot is captured before employee cleanup; the trace includes cleanup. Passing traces are discarded. Test output includes artifact paths and the page URL at failure. Cleanup and artifact-capture errors identify the affected test.
-
-Artifacts are deliberately not registered with `AddTestAttachment`: VSTest would copy them into a second folder. Their paths are retained in TRX/HTML output instead. Share the reports together with the `artifacts` folder; logged absolute paths refer to the machine that ran the tests.
-
-Open a trace with the generated Playwright CLI:
+For test-body failures, the PIM screenshot is taken before cleanup; the trace includes cleanup. Passing traces are discarded. Paths and the failure URL appear in test output and TRX/HTML. Files are not registered with `AddTestAttachment`, which would make VSTest copy them again. Share reports with the `artifacts` folder; logged absolute paths refer to the original machine.
 
 ```powershell
 pwsh OrangeHRM.Tests/bin/Debug/net10.0/playwright.ps1 show-trace "<full path to the trace.zip>"
 ```
 
-`ResultsDirectory` is relative to the runsettings file; NUnit's `WorkDirectory` is relative to the built assembly. Both resolve to `OrangeHRM.Tests/TestResults` with the standard `bin/<configuration>/net10.0` layout. Results are ignored by Git and accumulate until removed; delete old results when they are no longer needed.
+`ResultsDirectory` is relative to the runsettings file; NUnit's `WorkDirectory` is relative to the assembly. Both resolve to `OrangeHRM.Tests/TestResults` with the standard build layout. Results are ignored by Git; remove old runs when no longer needed.
 
-## Known limitation
+## Startup limitation
 
-The public demo sometimes remains blank and exceeds the 30-second navigation timeout, including at the direct login URL. This has occurred before test actions, in both sequential and parallel execution. The suite keeps these failures visible and saves diagnostics; it does not apply automatic retries. A later run may succeed. An interrupted process or unavailable application can also prevent teardown from completing.
+The public demo can remain blank and exceed the 30-second navigation timeout, including at the direct login URL. Opening the login page retries once on a navigation timeout, with a message identifying the test. A second timeout fails normally. Credential submission is not retried, tests are not rerun, and assertion failures remain failures. Persistent unavailability still causes failures and can prevent cleanup.
+
+## At larger scale
+
+Evaluate reusable authenticated `storageState` for PIM setup while retaining the UI login test.
+Consider API cleanup after validating authentication and record ownership, while retaining UI deletion coverage.
+For five tests, independent UI setup and cleanup keep the suite straightforward and exercise the real workflow.
