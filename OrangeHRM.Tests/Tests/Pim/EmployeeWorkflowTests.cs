@@ -20,21 +20,22 @@ public class EmployeeWorkflowTests : PimTestBase
         await addEmployee.VerifyPageIsDisplayedAsync();
 
         // Register before Save so teardown can find a record even if the subsequent wait fails.
-        _employee = EmployeeData.CreateUnique();
-        TestContext.Progress.WriteLine($"Test employee: {_employee.EmployeeId} / {_employee.FirstName} {_employee.LastName}");
-        await addEmployee.CreateEmployeeAsync(_employee);
+        var employee = EmployeeData.CreateUnique();
+        EmployeesToCleanup.Add(employee);
+        TestContext.Progress.WriteLine($"Test employee: {employee.EmployeeId} / {employee.FirstName} {employee.LastName}");
+        await addEmployee.CreateEmployeeAsync(employee);
 
         await employeeList.OpenEmployeeListAsync();
-        await employeeList.SearchByEmployeeIdAsync(_employee.EmployeeId);
-        await employeeList.VerifyEmployeeIsListedAsync(_employee);
-        await employeeList.OpenEmployeeDetailsAsync(_employee.EmployeeId);
+        await employeeList.SearchByEmployeeIdAsync(employee.EmployeeId);
+        await employeeList.VerifyEmployeeIsListedAsync(employee);
+        await employeeList.OpenEmployeeDetailsAsync(employee.EmployeeId);
         await employeeDetails.VerifyPageIsDisplayedAsync();
-        await employeeDetails.VerifyEmployeeIdAsync(_employee.EmployeeId);
+        await employeeDetails.VerifyEmployeeIdAsync(employee.EmployeeId);
         var dateOfBirth = new DateOnly(1990, 5, 17);
-        var updatedEmployee = _employee with
+        var updatedEmployee = employee with
         {
             LastName = "DemoUpdated",
-            OtherId = $"ALT{_employee.EmployeeId}",
+            OtherId = $"ALT{employee.EmployeeId}",
             Nationality = "Canadian",
             DateOfBirth = dateOfBirth
         };
@@ -43,16 +44,16 @@ public class EmployeeWorkflowTests : PimTestBase
         await employeeDetails.SelectDateOfBirthAsync(dateOfBirth);
         await employeeDetails.SavePersonalDetailsAsync();
         await employeeDetails.VerifySaveConfirmationAsync();
-        _employee = updatedEmployee;
+        employee = updatedEmployee;
 
         await employeeList.OpenEmployeeListAsync();
-        await employeeList.SearchByEmployeeIdAsync(_employee.EmployeeId);
-        await employeeList.VerifyEmployeeIsListedAsync(_employee);
-        await employeeList.OpenEmployeeDetailsAsync(_employee.EmployeeId);
+        await employeeList.SearchByEmployeeIdAsync(employee.EmployeeId);
+        await employeeList.VerifyEmployeeIsListedAsync(employee);
+        await employeeList.OpenEmployeeDetailsAsync(employee.EmployeeId);
         await employeeDetails.VerifyPageIsDisplayedAsync();
-        await employeeDetails.VerifyEmployeeIdAsync(_employee.EmployeeId);
-        await employeeDetails.VerifyLastNameAndOtherIdAsync(_employee.LastName, _employee.OtherId);
-        await employeeDetails.VerifyNationalityAsync(_employee.Nationality);
+        await employeeDetails.VerifyEmployeeIdAsync(employee.EmployeeId);
+        await employeeDetails.VerifyLastNameAndOtherIdAsync(employee.LastName, employee.OtherId);
+        await employeeDetails.VerifyNationalityAsync(employee.Nationality);
         await employeeDetails.VerifyDateOfBirthAsync(dateOfBirth);
     }
 }

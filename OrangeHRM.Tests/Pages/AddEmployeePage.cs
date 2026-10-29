@@ -21,6 +21,8 @@ public class AddEmployeePage(IPage page) : BasePage(page)
         .Locator(".oxd-input-field-error-message");
     private ILocator LastNameValidationError => LastNameInput.Locator("xpath=../..")
         .Locator(".oxd-input-field-error-message");
+    private ILocator EmployeeIdValidationError => EmployeeIdInput.Locator("xpath=../..")
+        .Locator(".oxd-input-field-error-message");
 
     public async Task VerifyPageIsDisplayedAsync()
     {
@@ -56,13 +58,32 @@ public class AddEmployeePage(IPage page) : BasePage(page)
         await Expect(LastNameValidationError).ToHaveTextAsync("Required");
     }
 
-    public async Task CreateEmployeeAsync(EmployeeData employee)
+    public async Task VerifyDuplicateEmployeeIdErrorAsync(string employeeId)
+    {
+        await Expect(Heading).ToBeVisibleAsync();
+        await Expect(EmployeeIdInput).ToHaveValueAsync(employeeId);
+        await Expect(EmployeeIdValidationError).ToBeVisibleAsync();
+        await Expect(EmployeeIdValidationError).ToHaveTextAsync("Employee Id already exists");
+    }
+
+    public async Task VerifyEmployeeIdErrorIsClearedAsync(string employeeId)
+    {
+        await Expect(EmployeeIdInput).ToHaveValueAsync(employeeId);
+        await Expect(EmployeeIdValidationError).ToBeHiddenAsync();
+    }
+
+    public async Task FillEmployeeDetailsAsync(EmployeeData employee)
     {
         await FillFirstNameAsync(employee.FirstName);
         await MiddleNameInput.FillAsync(employee.MiddleName);
         await FillLastNameAsync(employee.LastName);
         await SetEmployeeIdAsync(employee.EmployeeId);
         await CreateLoginDetailsCheckbox.UncheckAsync();
+    }
+
+    public async Task CreateEmployeeAsync(EmployeeData employee)
+    {
+        await FillEmployeeDetailsAsync(employee);
         await SubmitAsync();
         await Heading.WaitForAsync(new() { State = WaitForSelectorState.Hidden });
     }

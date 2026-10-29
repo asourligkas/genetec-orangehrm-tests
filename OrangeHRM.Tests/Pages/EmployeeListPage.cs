@@ -13,6 +13,7 @@ public class EmployeeListPage(IPage page) : BasePage(page)
         .Filter(new() { Has = Page.GetByText("Employee Id", new() { Exact = true }) })
         .GetByRole(AriaRole.Textbox);
     private ILocator SearchButton => Page.GetByRole(AriaRole.Button, new() { Name = "Search", Exact = true });
+    private ILocator TableLoader => Page.Locator(".oxd-table-loader");
     // "No Records Found" appears in a results span and a toast paragraph; select only the results.
     private ILocator NoRecordsMessage => Page.Locator("span").Filter(new() { HasText = "No Records Found" });
     private ILocator ConfirmDeleteButton => Page.GetByRole(AriaRole.Dialog)
@@ -21,7 +22,15 @@ public class EmployeeListPage(IPage page) : BasePage(page)
     private ILocator EmployeeRow(string employeeId) => Page.GetByRole(AriaRole.Row)
         .Filter(new() { Has = Page.GetByRole(AriaRole.Cell, new() { Name = employeeId, Exact = true }) });
 
-    private ILocator DeleteButtonForEmployee(string employeeId) => EmployeeRow(employeeId)
+    // First/middle names stay unchanged in our edit test and distinguish records if IDs collide.
+    private ILocator EmployeeRow(EmployeeData employee) => EmployeeRow(employee.EmployeeId)
+        .Filter(new() { Has = Page.GetByRole(AriaRole.Cell, new()
+        {
+            Name = $"{employee.FirstName} {employee.MiddleName}".Trim(),
+            Exact = true
+        }) });
+
+    private ILocator DeleteButtonForEmployee(EmployeeData employee) => EmployeeRow(employee)
         .GetByRole(AriaRole.Button).Filter(new() { Has = Page.Locator("i.bi-trash") });
 
     public async Task VerifyPageIsDisplayedAsync()
@@ -54,7 +63,9 @@ public class EmployeeListPage(IPage page) : BasePage(page)
             () => SearchButton.ClickAsync(), response => IsGetEmployeesResponse(response)
                 && response.Url.Contains(Uri.EscapeDataString(employeeId), StringComparison.Ordinal));
         await response.FinishedAsync();
-        await Expect(EmployeeRow(employeeId).Or(NoRecordsMessage)).ToBeVisibleAsync();
+        await Expect(TableLoader).ToBeHiddenAsync();
+        // Searching may return several rows if duplicate-ID prevention regresses.
+        await Expect(EmployeeRow(employeeId).Or(NoRecordsMessage).First).ToBeVisibleAsync();
     }
 
     public async Task VerifyEmployeeIsListedAsync(EmployeeData employee)
@@ -71,22 +82,22 @@ public class EmployeeListPage(IPage page) : BasePage(page)
         await EmployeeRow(employeeId).GetByRole(AriaRole.Cell, new() { Name = employeeId, Exact = true }).ClickAsync();
     }
 
-    public async Task VerifyEmployeeIsNotListedAsync(string employeeId)
+    public async Task VerifyEmployeeIsNotListedAsync(EmployeeData employee)
     {
-        await Expect(NoRecordsMessage).ToBeVisibleAsync();
-        await Expect(EmployeeRow(employeeId)).ToHaveCountAsync(0);
+        // Other records may share the ID when duplicate-ID prevention regresses.
+        await Expect(EmployeeRow(employee)).ToHaveCountAsync(0);
     }
 
     public async Task DeleteEmployeeIfPresentAsync(EmployeeData employee)
     {
         await OpenEmployeeListAsync();
         await SearchByEmployeeIdAsync(employee.EmployeeId);
-        if (await NoRecordsMessage.IsVisibleAsync())
+        var row = EmployeeRow(employee);
+        if (await row.CountAsync() == 0)
             return;
 
-        var row = EmployeeRow(employee.EmployeeId);
         await Expect(row).ToHaveCountAsync(1);
-        await DeleteButtonForEmployee(employee.EmployeeId).ClickAsync();
+        await DeleteButtonForEmployee(employee).ClickAsync();
         await ConfirmDeleteButton.ClickAsync();
         await Expect(ConfirmDeleteButton).ToBeHiddenAsync();
     }

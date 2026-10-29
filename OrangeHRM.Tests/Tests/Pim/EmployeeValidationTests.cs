@@ -18,21 +18,67 @@ public class EmployeeValidationTests : PimTestBase
         await addEmployee.VerifyPageIsDisplayedAsync();
 
         // Track the intended ID before any Save, including invalid submissions.
-        _employee = EmployeeData.CreateUnique();
-        TestContext.Progress.WriteLine($"Validation test employee: {_employee.EmployeeId}.");
-        await addEmployee.SetEmployeeIdAsync(_employee.EmployeeId);
+        var employee = EmployeeData.CreateUnique();
+        EmployeesToCleanup.Add(employee);
+        TestContext.Progress.WriteLine($"Validation test employee: {employee.EmployeeId}.");
+        await addEmployee.SetEmployeeIdAsync(employee.EmployeeId);
         await addEmployee.VerifyNamesAreEmptyAsync();
 
         await addEmployee.SubmitAsync();
         await addEmployee.VerifyRequiredNameErrorsAsync();
 
-        await addEmployee.FillFirstNameAsync(_employee.FirstName);
-        await addEmployee.VerifyFirstNameIsValidAndLastNameIsRequiredAsync(_employee.FirstName);
+        await addEmployee.FillFirstNameAsync(employee.FirstName);
+        await addEmployee.VerifyFirstNameIsValidAndLastNameIsRequiredAsync(employee.FirstName);
 
-        await addEmployee.FillLastNameAsync(_employee.LastName);
+        await addEmployee.FillLastNameAsync(employee.LastName);
         await addEmployee.SubmitAsync();
         await employeeDetails.VerifyPageIsDisplayedAsync();
-        await employeeDetails.VerifyEmployeeIdAsync(_employee.EmployeeId);
-        await employeeDetails.VerifyEmployeeNameAsync(_employee.FirstName, _employee.LastName);
+        await employeeDetails.VerifyEmployeeIdAsync(employee.EmployeeId);
+        await employeeDetails.VerifyEmployeeNameAsync(employee.FirstName, employee.LastName);
+    }
+
+    [Test]
+    public async Task CannotCreateEmployeeWithDuplicateId()
+    {
+        var employeeList = new EmployeeListPage(Page);
+        var addEmployee = new AddEmployeePage(Page);
+        var employeeDetails = new EmployeeDetailsPage(Page);
+
+        var firstEmployee = EmployeeData.CreateUnique();
+        var secondEmployee = EmployeeData.CreateUnique();
+        // Track both intended IDs before Save so partial creation failures are cleaned up.
+        EmployeesToCleanup.Add(firstEmployee);
+        EmployeesToCleanup.Add(secondEmployee);
+        TestContext.Progress.WriteLine($"Duplicate ID test employees: {firstEmployee.EmployeeId}, {secondEmployee.EmployeeId}.");
+
+        await Dashboard.OpenPimModuleAsync();
+        await employeeList.OpenAddEmployeeFormAsync();
+        await addEmployee.CreateEmployeeAsync(firstEmployee);
+        await employeeDetails.VerifyPageIsDisplayedAsync();
+        await employeeDetails.VerifyEmployeeIdAsync(firstEmployee.EmployeeId);
+        await employeeDetails.VerifyEmployeeNameAsync(firstEmployee.FirstName, firstEmployee.LastName);
+
+        await employeeList.OpenAddEmployeeFormAsync();
+        var duplicateEmployee = secondEmployee with { EmployeeId = firstEmployee.EmployeeId };
+        // Also clean up B under A's ID if duplicate creation unexpectedly succeeds.
+        EmployeesToCleanup.Add(duplicateEmployee);
+        await addEmployee.FillEmployeeDetailsAsync(duplicateEmployee);
+        await addEmployee.SubmitAsync();
+        await addEmployee.VerifyDuplicateEmployeeIdErrorAsync(firstEmployee.EmployeeId);
+
+        // Recover on the same form, retaining the second employee's names.
+        await addEmployee.SetEmployeeIdAsync(secondEmployee.EmployeeId);
+        await addEmployee.VerifyEmployeeIdErrorIsClearedAsync(secondEmployee.EmployeeId);
+        await addEmployee.SubmitAsync();
+        await employeeDetails.VerifyPageIsDisplayedAsync();
+        await employeeDetails.VerifyEmployeeIdAsync(secondEmployee.EmployeeId);
+        await employeeDetails.VerifyEmployeeNameAsync(secondEmployee.FirstName, secondEmployee.LastName);
+
+        await employeeList.OpenEmployeeListAsync();
+        await employeeList.SearchByEmployeeIdAsync(firstEmployee.EmployeeId);
+        // Exactly one original row must remain, with its original name.
+        await employeeList.VerifyEmployeeIsListedAsync(firstEmployee);
+        await employeeList.SearchByEmployeeIdAsync(secondEmployee.EmployeeId);
+        await employeeList.VerifyEmployeeIsListedAsync(secondEmployee);
     }
 }

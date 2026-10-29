@@ -7,7 +7,7 @@ namespace OrangeHRM.Tests.Fixtures;
 
 public abstract class PimTestBase : BaseTest
 {
-    protected EmployeeData? _employee;
+    protected List<EmployeeData> EmployeesToCleanup { get; } = [];
 
     [SetUp]
     public async Task LoginBeforeTest()
@@ -18,35 +18,36 @@ public abstract class PimTestBase : BaseTest
     }
 
     [TearDown]
-    public async Task DeleteCreatedEmployee()
+    public async Task DeleteCreatedEmployees()
     {
         // Preserve the failed page before cleanup navigates to the employee list.
         await CaptureFailureScreenshotAsync();
 
-        if (_employee is null)
-            return;
-
-        try
+        var cleanupFailures = new List<Exception>();
+        foreach (var employee in EmployeesToCleanup)
         {
-            var employeeList = new EmployeeListPage(Page);
-            await Dashboard.OpenPimModuleAsync();
-            await employeeList.OpenEmployeeListAsync();
-            await employeeList.DeleteEmployeeIfPresentAsync(_employee);
-            await employeeList.SearchByEmployeeIdAsync(_employee.EmployeeId);
-            await employeeList.VerifyEmployeeIsNotListedAsync(_employee.EmployeeId);
-            TestContext.Progress.WriteLine($"Cleanup verified for employee {_employee.EmployeeId}.");
-        }
-        catch (Exception exception)
-        {
-            var message = $"Cleanup failed for employee {_employee.EmployeeId}: {exception.Message}";
-            if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
+            try
+            {
+                var employeeList = new EmployeeListPage(Page);
+                await Dashboard.OpenPimModuleAsync();
+                await employeeList.OpenEmployeeListAsync();
+                await employeeList.DeleteEmployeeIfPresentAsync(employee);
+                await employeeList.SearchByEmployeeIdAsync(employee.EmployeeId);
+                await employeeList.VerifyEmployeeIsNotListedAsync(employee);
+                TestContext.Progress.WriteLine($"Cleanup verified for employee {employee.EmployeeId} / {employee.FirstName}.");
+            }
+            catch (Exception exception)
+            {
+                var message = $"Cleanup failed for employee {employee.EmployeeId} / {employee.FirstName}: {exception.Message}";
                 TestContext.Error.WriteLine(message);
-            else
-                throw new InvalidOperationException(message, exception);
+                cleanupFailures.Add(new InvalidOperationException(message, exception));
+            }
         }
-        finally
+
+        EmployeesToCleanup.Clear();
+        if (cleanupFailures.Count > 0 && TestContext.CurrentContext.Result.Outcome.Status != TestStatus.Failed)
         {
-            _employee = null;
+            throw new AggregateException("Employee cleanup failed.", cleanupFailures);
         }
     }
 }
