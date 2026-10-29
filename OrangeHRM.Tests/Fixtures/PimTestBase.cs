@@ -20,6 +20,9 @@ public abstract class PimTestBase : BaseTest
     [TearDown]
     public async Task DeleteCreatedEmployee()
     {
+        // Preserve the failed page before cleanup navigates to the employee list.
+        await CaptureFailureScreenshotAsync();
+
         if (_employee is null)
             return;
 
