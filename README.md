@@ -12,7 +12,7 @@ Target: https://opensource-demo.orangehrmlive.com/
 | Employee workflow | Create, search by ID, open details, edit last name, Other ID, nationality and date of birth, then reopen and verify persistence. |
 | Required names | Field-specific required errors clear as each name is supplied, allowing creation. |
 | Duplicate employee ID | An existing ID prevents creation; correcting it creates the second employee and preserves the original. |
-| Employee deletion | Cancel preserves the record; confirm removes it from a fresh search. |
+| Employee deletion | Create the employee via API; UI cancellation preserves the record, and confirmation removes it from a fresh search. |
 
 The three additional PIM scenarios cover validation, identifier uniqueness, and deletion confirmation.
 
@@ -52,9 +52,11 @@ Environment variables override the public demo defaults:
 
 To start directly at login, set `$env:ORANGEHRM_BASE_URL = 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login'` in PowerShell before running tests.
 
+The deletion test's API creation URL is hardcoded to the public demo, so run that test against the demo host.
+
 ## Design decisions
 
-- **Page objects:** `Pages/` owns locators, interactions, and reusable assertions. Tests describe scenarios and expected data. Creation is verified on the details page using the employee identity.
+- **Page objects:** `Pages/` owns locators, interactions, and reusable assertions. Tests describe scenarios and expected data. UI creation is verified on the details page using the employee identity. The deletion test creates its employee through `POST /api/v2/pim/employees`, reusing the authenticated browser context, checks API success, and verifies the employee in the UI before testing deletion.
 - **Fixtures:** `BaseTest` provides page objects and failure reporting. `PimTestBase` adds independent UI login and cleanup. This is sufficient for five tests.
 - **Synchronization:** Playwright actionability checks and retrying assertions handle readiness. Search also waits for the matching `GET /api/v2/pim/employees` response before checking the loader and UI results, because previous results may still be visible. This endpoint dependency is isolated to `EmployeeListPage`.
 - **Data and cleanup:** `EmployeeData.CreateUnique()` generates names and IDs. Records are registered before Save, including attempted duplicates. Teardown matches ID and unchanged first/middle names, verifies absence, and continues after individual cleanup failures. Cleanup errors are reported without replacing an existing test failure. Create Login Details stays disabled, so these are employee records.
